@@ -177,7 +177,7 @@ if page == "Dashboard Overview":
                 
                 if st.button(f"View Details", key=f"view_{idx}"):
                     st.session_state.selected_student = student.to_dict()
-                    st.experimental_rerun()
+                   st.rerun()
             
             st.divider()
     else:
@@ -222,7 +222,7 @@ elif page == "Student Details":
         if selected_name != "Choose a student...":
             selected_row = st.session_state.students_data[st.session_state.students_data['name'] == selected_name].iloc[0]
             st.session_state.selected_student = selected_row.to_dict()
-            st.experimental_rerun()
+           st.rerun()
     
     else:
         student = st.session_state.selected_student
@@ -241,7 +241,7 @@ elif page == "Student Details":
         with col3:
             if st.button("← Back to Dashboard"):
                 del st.session_state.selected_student
-                st.experimental_rerun()
+               st.rerun()
         
         # Score Breakdown
         st.subheader("📊 Score Breakdown")
@@ -381,7 +381,7 @@ elif page == "Data Entry":
                 ], ignore_index=True)
                 
                 st.session_state.show_success = True
-                st.experimental_rerun()
+               st.rerun()
             else:
                 st.error("Please enter student name")
     
@@ -554,7 +554,7 @@ elif page == "Analytics & Reports":
     
     with col3:
         if st.button("🔄 Refresh Live Data"):
-            st.experimental_rerun()
+           st.rerun()
 
 # Footer
 st.markdown("---")
