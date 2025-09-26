@@ -99,19 +99,22 @@ st.markdown("""
 # Initialize session state
 if 'students_data' not in st.session_state:
     st.session_state.students_data = pd.DataFrame({
-        'name': ['Ananya Chakraborty', 'Rahul Mondal', 'Priya Das', 'Amit Kumar', 'Sneha Roy'],
+        'name': ['Ananya Chakrabory', 'Rahul Mondal', 'Priya Das', 'Amit Kumar', 'Sneha Roy'],
         'grade': [9, 10, 9, 10, 9],
         'age': [14, 15, 14, 15, 14],
         'center': ['Saltlake Center'] * 5,
-        'attendance': [94, 91, 96, 88, 92],
-        'english': [82, 78, 88, 75, 80],
-        'bengali': [75, 70, 83, 72, 78],
-        'math': [80, 74, 87, 79, 82],
-        'science': [76, 72, 85, 77, 84],
-        'social': [78, 68, 82, 74, 81],
-        'aptitude_score': [9, 7, 8, 6, 8],
-        'total_score': [24, 23, 26, 21, 25],
-        'status': ['Scholarship Granted', 'Under Review', 'Scholarship Granted', 'Under Review', 'Scholarship Granted']
+        'scholarship_status': ['Active', 'Active', 'Active', 'Under Review', 'Active'],
+        'entry_score': [24, 23, 26, 21, 25],
+        'mid_year_math': [82, 78, 88, 75, 80],
+        'mid_year_english': [75, 70, 83, 72, 78],
+        'mid_year_science': [80, 74, 87, 79, 82],
+        'end_year_math': [85, 80, 90, 78, 83],
+        'end_year_english': [78, 72, 85, 75, 80],
+        'end_year_science': [82, 76, 88, 80, 85],
+        'attendance_mid': [94, 91, 96, 88, 92],
+        'attendance_end': [95, 93, 97, 85, 94],
+        'continuation_approved': [None, 'Approved', None, 'Pending', None],
+        'teacher_assigned': ['Teacher A', 'Teacher B', 'Teacher A', 'Teacher C', 'Teacher A']
     })
 
 if 'show_success' not in st.session_state:
@@ -141,7 +144,7 @@ st.sidebar.header("Platform Controls")
 # Navigation
 
 if st.session_state["role"] == "admin":
-    page_options = ["Dashboard Overview", "Student Details", "Data Entry", "Reports & Analytics"]
+    page_options = ["Dashboard Overview", "Student Details", "Scholarship Approvals", "Reports & Analytics"]
 elif st.session_state["role"] == "teacher":
     page_options = ["Dashboard Overview", "Student Details", "Data Entry"]
 else:  # coordinator
@@ -447,6 +450,70 @@ elif page == "Data Entry":
                 st.rerun()
             else:
                 st.error("Please enter student name")
+    # Admin Approval Page
+elif page == "Scholarship Approvals":
+    if st.session_state["role"] != "admin":
+        st.error("Access Denied: Only admins can approve scholarship continuations")
+        st.stop()
+    
+    st.header("Admin Panel - Scholarship Continuation Approvals")
+    
+    # Filter Grade 9 students who need continuation approval
+    grade_9_students = st.session_state.students_data[
+        (st.session_state.students_data['grade'] == 9) & 
+        (st.session_state.students_data['continuation_approved'].isna())
+    ]
+    
+    if len(grade_9_students) == 0:
+        st.success("No pending approval requests")
+    else:
+        st.subheader("Pending Approvals for Grade 9 → Grade 10 Continuation")
+        
+        for idx, student in grade_9_students.iterrows():
+            with st.expander(f"Review: {student['name']}", expanded=True):
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.write("**Performance Summary**")
+                    st.write(f"Entry Score: {student['entry_score']}/30")
+                    st.write(f"Mid-Year Avg: {(student['mid_year_math'] + student['mid_year_english'] + student['mid_year_science'])/3:.1f}%")
+                    st.write(f"End-Year Avg: {(student['end_year_math'] + student['end_year_english'] + student['end_year_science'])/3:.1f}%")
+                
+                with col2:
+                    st.write("**Attendance**")
+                    st.write(f"Mid-Year: {student['attendance_mid']}%")
+                    st.write(f"End-Year: {student['attendance_end']}%")
+                    
+                with col3:
+                    st.write("**Recommendation**")
+                    end_avg = (student['end_year_math'] + student['end_year_english'] + student['end_year_science'])/3
+                    if end_avg >= 75 and student['attendance_end'] >= 90:
+                        st.success("Recommended for Continuation")
+                    elif end_avg >= 70 and student['attendance_end'] >= 85:
+                        st.warning("Conditional Continuation")
+                    else:
+                        st.error("At Risk - Review Required")
+                
+                # Approval buttons
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if st.button(f"✅ Approve", key=f"approve_{idx}"):
+                        st.session_state.students_data.loc[idx, 'continuation_approved'] = 'Approved'
+                        st.success(f"Approved continuation for {student['name']}")
+                        st.rerun()
+                
+                with col2:
+                    if st.button(f"❌ Reject", key=f"reject_{idx}"):
+                        st.session_state.students_data.loc[idx, 'continuation_approved'] = 'Rejected'
+                        st.error(f"Rejected continuation for {student['name']}")
+                        st.rerun()
+                
+                with col3:
+                    if st.button(f"⏸️ Hold", key=f"hold_{idx}"):
+                        st.session_state.students_data.loc[idx, 'continuation_approved'] = 'On Hold'
+                        st.warning(f"Put {student['name']} on hold")
+                        st.rerun()
+
     
     # Preview calculation
     if st.button("🧮 Preview Score Calculation"):
