@@ -8,8 +8,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
 
-def check_password():
-   users = {
+users = {
     "admin": {"password": "admin123", "role": "admin", "name": "System Administrator"},
     "teacher": {"password": "teacher123", "role": "teacher", "name": "Teacher"},
     "coordinator": {"password": "coord123", "role": "coordinator", "name": "Center Coordinator"}
