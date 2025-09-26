@@ -122,9 +122,9 @@ if 'show_success' not in st.session_state:
 
 # Calculate academic scores
 def calculate_academic_score(row):
-    subjects = ['english', 'bengali', 'math', 'science', 'social']
-    avg = row[subjects].mean()
-    return round(avg, 1)
+    # Use mid-year scores for academic average
+    mid_subjects = ['mid_year_math', 'mid_year_english', 'mid_year_science']
+    return round(row[mid_subjects].mean(), 1)
 
 # Add academic score column
 st.session_state.students_data['academic_avg'] = st.session_state.students_data.apply(calculate_academic_score, axis=1)
