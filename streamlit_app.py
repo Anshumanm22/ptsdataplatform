@@ -8,6 +8,49 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
 
+def check_password():
+   users = {
+    "admin": {"password": "admin123", "role": "admin", "name": "System Administrator"},
+    "teacher": {"password": "teacher123", "role": "teacher", "name": "Teacher"},
+    "coordinator": {"password": "coord123", "role": "coordinator", "name": "Center Coordinator"}
+}
+
+def authenticate():
+    st.title("PTS Platform Login")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        
+        if st.button("Login", use_container_width=True):
+            if username in users and users[username]["password"] == password:
+                st.session_state["authenticated"] = True
+                st.session_state["user"] = username
+                st.session_state["role"] = users[username]["role"]
+                st.session_state["user_name"] = users[username]["name"]
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
+        
+        # Show demo credentials
+        with st.expander("Demo Credentials"):
+            st.write("**Admin:** admin / admin123")
+            st.write("**Teacher:** teacher / teacher123") 
+            st.write("**Coordinator:** coordinator / coord123")
+
+if "authenticated" not in st.session_state:
+    authenticate()
+    st.stop()
+
+with st.sidebar:
+    st.write(f"Logged in as: **{st.session_state['user_name']}**")
+    st.write(f"Role: {st.session_state['role'].title()}")
+    if st.button("Logout"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+
 # Page config
 st.set_page_config(
     page_title="PTS Data Platform",
@@ -95,11 +138,17 @@ st.markdown("""
 # Sidebar
 st.sidebar.header("Platform Controls")
 
+
 # Navigation
-page = st.sidebar.selectbox(
-    "Select Page",
-    ["Dashboard Overview", "Student Details", "Data Entry", "Analytics & Reports"]
-)
+
+if st.session_state["role"] == "admin":
+    page_options = ["Dashboard Overview", "Student Details", "Data Entry", "Reports & Analytics"]
+elif st.session_state["role"] == "teacher":
+    page_options = ["Dashboard Overview", "Student Details", "Data Entry"]
+else:  # coordinator
+    page_options = ["Dashboard Overview", "Reports & Analytics"]
+
+page = st.sidebar.selectbox("Select Page", page_options)
 
 # Success message
 if st.session_state.show_success:
