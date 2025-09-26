@@ -155,106 +155,121 @@ if st.session_state.show_success:
     st.session_state.show_success = False
 
 # Dashboard Overview Page
+# Dashboard Overview Page
 if page == "Dashboard Overview":
-    st.header("📊 Dashboard Overview")
     
-    # Live Statistics
-    col1, col2, col3, col4 = st.columns(4)
+    if st.session_state["role"] == "admin":
+        st.header("🏢 Admin Dashboard - Multi-Center Overview")
+        
+        # Mock multi-center data
+        center_data = pd.DataFrame({
+            'center': ['Saltlake Center', 'Park Street Center', 'Howrah Center', 'New Town Center'],
+            'total_students': [25, 18, 22, 15],
+            'avg_attendance': [92.5, 89.2, 94.1, 87.8],
+            'scholarships': [18, 12, 16, 10],
+            'avg_score': [24.2, 23.1, 25.4, 22.8]
+        })
+        
+        # Multi-center metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Centers", len(center_data), delta="Active")
+        with col2:
+            st.metric("Total Students", center_data['total_students'].sum(), delta="All Centers")
+        with col3:
+            st.metric("Total Scholarships", center_data['scholarships'].sum(), delta="Granted")
+        with col4:
+            st.metric("Network Avg Score", f"{center_data['avg_score'].mean():.1f}/30", delta="System-wide")
+        
+        # Center comparison table
+        st.subheader("📊 Center Performance Comparison")
+        st.dataframe(center_data, use_container_width=True, hide_index=True)
+        
+        # Center selector for detailed view
+        selected_center = st.selectbox("View Center Details:", center_data['center'].tolist())
+        center_students = st.session_state.students_data[st.session_state.students_data['center'] == selected_center]
+        
+        if len(center_students) > 0:
+            st.subheader(f"Students at {selected_center}")
+            st.dataframe(center_students[['name', 'grade', 'attendance', 'total_score', 'status']], 
+                        use_container_width=True, hide_index=True)
     
-    total_students = len(st.session_state.students_data)
-    avg_attendance = st.session_state.students_data['attendance'].mean()
-    scholarships_granted = len(st.session_state.students_data[st.session_state.students_data['status'] == 'Scholarship Granted'])
-    avg_total_score = st.session_state.students_data['total_score'].mean()
-    
-    with col1:
-        st.metric("Total Students", total_students, delta="Live Data")
-    with col2:
-        st.metric("Avg Attendance", f"{avg_attendance:.1f}%", delta=f"{avg_attendance-90:.1f}%")
-    with col3:
-        st.metric("Scholarships Granted", scholarships_granted, delta="Auto-calculated")
-    with col4:
-        st.metric("Avg Total Score", f"{avg_total_score:.1f}/30", delta=f"{avg_total_score-24:.1f}")
-    
-    # Filters
-    st.subheader("🔍 Student Search & Filter")
-    col1, col2, col3 = st.columns([2, 1, 1])
-    
-    with col1:
-        search_term = st.text_input("Search by student name", placeholder="Type student name...")
-    with col2:
-        grade_filter = st.selectbox("Filter by Grade", ["All Grades", "Grade 9", "Grade 10"])
-    with col3:
-        status_filter = st.selectbox("Filter by Status", ["All Status", "Scholarship Granted", "Under Review"])
-    
-    # Apply filters
-    filtered_data = st.session_state.students_data.copy()
-    
-    if search_term:
-        filtered_data = filtered_data[filtered_data['name'].str.contains(search_term, case=False, na=False)]
-    
-    if grade_filter != "All Grades":
-        grade_num = 9 if grade_filter == "Grade 9" else 10
-        filtered_data = filtered_data[filtered_data['grade'] == grade_num]
-    
-    if status_filter != "All Status":
-        filtered_data = filtered_data[filtered_data['status'] == status_filter]
-    
-    if search_term or grade_filter != "All Grades" or status_filter != "All Status":
-        st.info(f"Found {len(filtered_data)} student(s) matching your criteria")
-    
-    # Student Grid
-    st.subheader("👥 Student Performance Grid")
-    
-    if len(filtered_data) > 0:
-        for idx, student in filtered_data.iterrows():
-            col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
-            
-            with col1:
-                st.write(f"**{student['name']}**")
-                st.caption(f"Grade {student['grade']} • Age {student['age']} • {student['center']}")
-            
-            with col2:
-                st.metric("Attendance", f"{student['attendance']}%", delta=None)
-            
-            with col3:
-                st.metric("Total Score", f"{student['total_score']}/30", delta=None)
-            
-            with col4:
-                status_class = "status-granted" if student['status'] == 'Scholarship Granted' else "status-review"
-                st.markdown(f'<span class="{status_class}">{student["status"]}</span>', unsafe_allow_html=True)
+    elif st.session_state["role"] == "teacher":
+        st.header("👩‍🏫 Teacher Dashboard - My Students")
+        
+        # Mock teacher assignment (in real app, this would be from database)
+        teacher_students = st.session_state.students_data.sample(n=3)  # Simulate assigned students
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("My Students", len(teacher_students), delta="Assigned")
+        with col2:
+            st.metric("Avg Attendance", f"{teacher_students['attendance'].mean():.1f}%", delta="My Class")
+        with col3:
+            st.metric("Scholarships", len(teacher_students[teacher_students['status'] == 'Scholarship Granted']), delta="Achieved")
+        
+        st.subheader("📚 My Assigned Students")
+        
+        # Detailed student cards for teacher
+        for idx, student in teacher_students.iterrows():
+            with st.expander(f"👤 {student['name']} - Grade {student['grade']}", expanded=True):
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(f"**Attendance:** {student['attendance']}%")
+                with col2:
+                    st.write(f"**Academic Avg:** {student['academic_avg']:.1f}%")
+                with col3:
+                    st.write(f"**Total Score:** {student['total_score']}/30")
+                with col4:
+                    st.write(f"**Status:** {student['status']}")
                 
-                if st.button(f"View Details", key=f"view_{idx}"):
-                    st.session_state.selected_student = student.to_dict()
-                    st.rerun()
-            
-            st.divider()
-    else:
-        st.warning("No students found matching your search criteria")
+                # Subject breakdown
+                subjects = ['English', 'Bengali', 'Math', 'Science', 'Social']
+                scores = [student['english'], student['bengali'], student['math'], student['science'], student['social']]
+                subject_df = pd.DataFrame({'Subject': subjects, 'Score': scores})
+                st.bar_chart(subject_df.set_index('Subject'))
     
-    # Quick Charts
-    st.subheader("📈 Quick Analytics")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Attendance Distribution
-        fig_attendance = px.histogram(
-            st.session_state.students_data, 
-            x='attendance', 
-            title='Attendance Distribution',
-            color_discrete_sequence=['#667eea']
-        )
-        st.plotly_chart(fig_attendance, use_container_width=True)
-    
-    with col2:
-        # Status Distribution
-        status_counts = st.session_state.students_data['status'].value_counts()
-        fig_status = px.pie(
-            values=status_counts.values, 
-            names=status_counts.index,
-            title='Scholarship Status Distribution'
-        )
-        st.plotly_chart(fig_status, use_container_width=True)
+    elif st.session_state["role"] == "coordinator":
+        st.header("🏛️ Coordinator Dashboard - Center Management")
+        
+        # Center-specific data (mock single center)
+        my_center = "Saltlake Center"
+        center_students = st.session_state.students_data[st.session_state.students_data['center'] == my_center]
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Center Students", len(center_students), delta=my_center)
+        with col2:
+            st.metric("Avg Attendance", f"{center_students['attendance'].mean():.1f}%", delta="Center Average")
+        with col3:
+            st.metric("Scholarships", len(center_students[center_students['status'] == 'Scholarship Granted']), delta="This Center")
+        with col4:
+            st.metric("At-Risk Students", len(center_students[center_students['total_score'] < 24]), delta="Need Support")
+        
+        # Grade-wise breakdown
+        st.subheader("📊 Grade-wise Performance")
+        grade_stats = center_students.groupby('grade').agg({
+            'attendance': 'mean',
+            'total_score': 'mean',
+            'name': 'count'
+        }).round(1)
+        grade_stats.columns = ['Avg Attendance', 'Avg Score', 'Student Count']
+        st.dataframe(grade_stats, use_container_width=True)
+        
+        # Student overview table
+        st.subheader("👥 All Center Students")
+        display_data = center_students[['name', 'grade', 'attendance', 'total_score', 'status']].copy()
+        display_data.columns = ['Name', 'Grade', 'Attendance %', 'Total Score', 'Status']
+        st.dataframe(display_data, use_container_width=True, hide_index=True)
+        
+        # Action items
+        st.subheader("⚠️ Attention Required")
+        at_risk = center_students[center_students['attendance'] < 90]
+        if len(at_risk) > 0:
+            st.warning(f"{len(at_risk)} students have attendance below 90%")
+            st.dataframe(at_risk[['name', 'grade', 'attendance']], hide_index=True)
+        else:
+            st.success("All students maintaining good attendance!")
 
 # Student Details Page
 elif page == "Student Details":
