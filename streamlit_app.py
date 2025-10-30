@@ -141,11 +141,11 @@ st.sidebar.header("Platform Navigation")
 
 # Role-based page options
 if st.session_state["role"] == "admin":
-    page_options = ["Dashboard Overview", "Student Details", "Scholarship Approvals", "Reports & Analytics"]
+    page_options = ["Dashboard Overview", "Student Details", "Add New Student", "Scholarship Approvals", "Reports & Analytics"]
 elif st.session_state["role"] == "teacher":
     page_options = ["Dashboard Overview", "Student Details", "Data Entry"]
 else:  # coordinator
-    page_options = ["Dashboard Overview", "Reports & Analytics"]
+    page_options = ["Dashboard Overview", "Add New Student", "Reports & Analytics"]
 
 page = st.sidebar.selectbox("Select Page", page_options)
 
@@ -340,6 +340,68 @@ elif page == "Student Details":
             scores_end = [student['end_year_math'], student['end_year_english'], student['end_year_science']]
             subject_df_end = pd.DataFrame({'Subject': subjects, 'Score': scores_end})
             st.bar_chart(subject_df_end.set_index('Subject'))
+
+elif page == "Add New Student":
+    if st.session_state["role"] not in ["admin", "coordinator"]:
+        st.error("Access Denied: Only admins and coordinators can add new students")
+        st.stop()
+    
+    st.header("➕ Add New Student to Program")
+    
+    with st.form("new_student_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            new_name = st.text_input("Student Name *")
+            new_grade = st.selectbox("Grade *", [9, 10])
+            new_age = st.number_input("Age", 13, 17, 14 if new_grade == 9 else 15)
+            
+            # Coordinator can only add to their center, admin can choose
+            if st.session_state["role"] == "admin":
+                new_center = st.selectbox("Center", ["Saltlake Center", "Park Street Center", "Howrah Center", "New Town Center"])
+            else:  # coordinator
+                new_center = "Saltlake Center"  # Their assigned center
+                st.text_input("Center", value=new_center, disabled=True)
+        
+        with col2:
+            new_entry_score = st.number_input("Entry Score (out of 30)", 0, 30, 24)
+            new_teacher = st.selectbox("Assign Teacher", ["Teacher A", "Teacher B", "Teacher C"])
+            scholarship_status = st.selectbox("Initial Status", ["Active", "Under Review"])
+        
+        if st.form_submit_button("✅ Add Student to Program", type="primary"):
+            if new_name:
+                new_student = {
+                    'name': new_name,
+                    'grade': new_grade,
+                    'age': new_age,
+                    'center': new_center,
+                    'scholarship_status': scholarship_status,
+                    'entry_score': new_entry_score,
+                    'mid_year_math': 0,
+                    'mid_year_english': 0,
+                    'mid_year_science': 0,
+                    'end_year_math': 0,
+                    'end_year_english': 0,
+                    'end_year_science': 0,
+                    'attendance_mid': 0,
+                    'attendance_end': 0,
+                    'continuation_approved': None if new_grade == 9 else 'N/A',
+                    'teacher_assigned': new_teacher,
+                    'attendance_avg': 0,
+                    'mid_year_avg': 0,
+                    'end_year_avg': 0
+                }
+                
+                st.session_state.students_data = pd.concat([
+                    st.session_state.students_data,
+                    pd.DataFrame([new_student])
+                ], ignore_index=True)
+                
+                st.success(f"✅ {new_name} has been added to the program!")
+                st.rerun()
+            else:
+                st.error("Please enter student name")
+
 
 # Data Entry Page - Teachers Only
 elif page == "Data Entry":
