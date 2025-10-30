@@ -194,8 +194,8 @@ if page == "Dashboard Overview":
         
         if len(center_students) > 0:
             st.subheader(f"Students at {selected_center}")
-            st.dataframe(center_students[['name', 'grade', 'attendance', 'total_score', 'status']], 
-                        use_container_width=True, hide_index=True)
+            st.dataframe(center_students[['name', 'grade', 'attendance_avg', 'entry_score', 'scholarship_status']])
+
     
     elif st.session_state["role"] == "teacher":
         st.header("👩‍🏫 Teacher Dashboard - My Students")
